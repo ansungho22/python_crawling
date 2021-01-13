@@ -1,0 +1,70 @@
+from openpyxl import Workbook
+from openpyxl import load_workbook
+import requests
+from bs4 import BeautifulSoup
+from selenium import webdriver
+import pandas as pd
+
+#유웨이
+def uwayapply(link):
+    try:
+        webpage = requests.get(link)
+        soup = BeautifulSoup(webpage.content, "html.parser")
+        tables = soup.select('table')
+        tr_list = []
+        list = []
+        for tr in tables[0].find_all(['th','td']):
+            tr_list.append(tr.text.strip())
+        start_point = int(len(tr_list) - 3)
+        source.append(tr_list[start_point:len(tr_list)])
+
+    except (TypeError,AttributeError,IndexError):
+        source.append([0,0,0])
+        pass
+#진학사
+def jinhak(link):
+    webpage = requests.get(link)
+    soup = BeautifulSoup(webpage.content, "html.parser")
+
+    tables = soup.find('tr',{'class':"total"})
+    td_list = []
+    list = []
+    try:
+        for td in tables.find_all(['th','td']):
+            td_list.append(td.text.strip())
+            start_point = int(len(td_list) - 3)
+        source.append(td_list[start_point:len(td_list)])
+        
+    except (TypeError,AttributeError,IndexError):
+        source.append([0,0,0])
+        pass
+
+local = ""## 파일 위치
+load_wb = load_workbook(local, data_only=True)
+load_ws = load_wb['2021하이퍼링크']
+link_list = []
+source = []
+
+for link in load_ws['C']:
+    link_list.append(str(link.value))
+
+for do in link_list[1:]:
+    print(1)
+    print(do)
+    if(do.find('jinhakapply')!=-1):
+        jinhak(do)
+    elif(do.find('uwayapply')!=-1):
+        uwayapply(do)
+    else:
+        source.append([0,0,0])
+
+
+
+i = 0
+for row_index in range(2, 189):
+    load_ws.cell(row=row_index, column=6).value = str(source[i][0])
+    load_ws.cell(row=row_index, column=7).value = str(source[i][1])
+    load_ws.cell(row=row_index, column=8).value = str(source[i][2])
+    i+=1
+
+load_wb.save(local)
